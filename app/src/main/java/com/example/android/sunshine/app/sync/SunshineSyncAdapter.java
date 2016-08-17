@@ -36,8 +36,6 @@ import com.example.android.sunshine.app.R;
 import com.example.android.sunshine.app.Utility;
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.muzei.WeatherMuzeiSource;
-import com.google.android.gms.common.api.PendingResult;
-import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
@@ -54,7 +52,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 
@@ -522,12 +519,11 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
         Cursor cursor = context.getContentResolver().query(weatherUri, NOTIFY_WEATHER_PROJECTION, null, null, null);
 
 
-        int random = new Random().nextInt();
+        long random =System.currentTimeMillis();
         PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/count");
-        putDataMapReq.getDataMap().putInt("HH", random);
+        putDataMapReq.getDataMap().putLong("HH", random);
         PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
-        PendingResult<DataApi.DataItemResult> pendingResult =
-                Wearable.DataApi.putDataItem(SunshineSyncService.getmGoogleApiClient(), putDataReq);
+        Wearable.DataApi.putDataItem(SunshineSyncService.getmGoogleApiClient(), putDataReq);
 
 
         Log.e(LOG_TAG, "syncWearable: " + random);

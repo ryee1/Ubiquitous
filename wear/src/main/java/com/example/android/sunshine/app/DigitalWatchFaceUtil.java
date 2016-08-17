@@ -1,5 +1,4 @@
-package com.udacity.richard.wear;
-
+package com.example.android.sunshine.app;
 /*
  * Copyright (C) 2014 The Android Open Source Project
  *

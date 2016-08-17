@@ -26,7 +26,7 @@ public class SunshineSyncService extends Service {
                         .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
                             @Override
                             public void onConnected(Bundle connectionHint) {
-                                Log.d(LOG_TAG, "onConnected: " + connectionHint);
+                                Log.e(LOG_TAG, "onConnected: " + connectionHint);
                             }
 
                             @Override
@@ -43,6 +43,7 @@ public class SunshineSyncService extends Service {
                         // Request access only to the Wearable API
                         .addApi(Wearable.API)
                         .build();
+                Log.e(LOG_TAG, "google api created");
             }
             if (sSunshineSyncAdapter == null) {
                 sSunshineSyncAdapter = new SunshineSyncAdapter(getApplicationContext(), true);

@@ -14,7 +14,7 @@
 // * limitations under the License.
 // */
 //
-package com.udacity.richard.wear;
+package com.example.android.sunshine.app;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -83,7 +83,11 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
         static final int MSG_UPDATE_TIME = 0;
         long mInteractiveUpdateRateMs = NORMAL_UPDATE_RATE_MS;
 
-        private GoogleApiClient mGoogleApiClient;
+        private GoogleApiClient  mGoogleApiClient = new GoogleApiClient.Builder(SunshineDigitalWatchFace.this)
+                .addApi(Wearable.API)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .build();
 
         Paint mBackgroundPaint;
         Paint mDatePaint;
@@ -143,11 +147,7 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
                     .setShowSystemUiTime(false)
                     .build());
-            mGoogleApiClient = new GoogleApiClient.Builder(SunshineDigitalWatchFace.this)
-                    .addApi(Wearable.API)
-                    .addConnectionCallbacks(this)
-                    .addOnConnectionFailedListener(this)
-                    .build();
+
 
             Resources resources = SunshineDigitalWatchFace.this.getResources();
             mYOffset = resources.getDimension(R.dimen.digital_y_offset);
