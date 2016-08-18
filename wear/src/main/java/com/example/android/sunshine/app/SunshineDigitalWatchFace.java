@@ -42,11 +42,14 @@ import android.view.WindowInsets;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.PendingResult;
 import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataMapItem;
+import com.google.android.gms.wearable.PutDataMapRequest;
+import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
 
 import java.io.InputStream;
@@ -60,6 +63,8 @@ import java.util.concurrent.TimeUnit;
 public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
 
     private static final String TAG = "SunshineWatch";
+
+    public static final String REQUEST_SYNC_PATH = "/request_sync";
 
     public static final String WEATHER_WEARABLE_PATH = "/weather_wearable_path";
     public static final String HIGH_TEMP_KEY = "high_temp_key";
@@ -217,6 +222,7 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
 
         @Override public void onDraw(Canvas canvas, Rect bounds) {
             long now = System.currentTimeMillis();
+            float lowTempTextLength = 0, highTempTextLength = 0;
             mCalendar.setTimeInMillis(now);
             mDate.setTime(now);
             boolean is24Hour = DateFormat.is24HourFormat(SunshineDigitalWatchFace.this);
@@ -281,12 +287,14 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
                 canvas.drawText(
                         mDateFormat.format(mDate),
                         mXOffset, mYOffset + mLineHeight * 2, mDatePaint);
-                if (highTemp != null && lowTemp != null && weatherIcon != null) {
+                if (highTemp != null && lowTemp != null) {
                     // High/Low temp
-                    float highTempTextLength = mDatePaint.measureText(highTemp);
-                    float lowTempTextLength = mDatePaint.measureText(lowTemp);
+                    highTempTextLength = mDatePaint.measureText(highTemp);
+                    lowTempTextLength = mDatePaint.measureText(lowTemp);
                     canvas.drawText(highTemp, mXOffset, mYOffset + mLineHeight * 3, mDatePaint);
                     canvas.drawText(lowTemp, mXOffset + highTempTextLength, mYOffset + mLineHeight * 3, mDatePaint);
+                }
+                if(weatherIcon != null){
                     canvas.drawBitmap(weatherIcon, mXOffset + highTempTextLength + lowTempTextLength + mXOffset,
                             mYOffset + mLineHeight * 3, null);
                 }
@@ -378,6 +386,11 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
 
         @Override public void onConnected(@Nullable Bundle bundle) {
             Wearable.DataApi.addListener(mGoogleApiClient, this);
+            PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/request_sync");
+            putDataMapReq.getDataMap().putInt(COUNT_KEY, count++);
+            PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
+            PendingResult<DataApi.DataItemResult> pendingResult =
+                    Wearable.DataApi.putDataItem(mGoogleApiClient, putDataReq);
             Log.e(TAG, "onConnected");
         }
 
@@ -402,6 +415,9 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
                     } else {
                         Log.e(TAG, "Unknown data path: " + path);
                     }
+                }
+                else{
+                    Log.e(TAG, "Unknown Data Type: " + event.getType());
                 }
             }
         }
@@ -441,6 +457,7 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
 
             @Override protected void onPostExecute(Bitmap bitmap) {
                 weatherIcon = bitmap;
+                Log.e(TAG, "onPostExecute");
                 invalidate();
             }
         }

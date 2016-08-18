@@ -36,7 +36,11 @@ import com.example.android.sunshine.app.R;
 import com.example.android.sunshine.app.Utility;
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.muzei.WeatherMuzeiSource;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.wearable.Asset;
+import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
@@ -53,10 +57,11 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 
-public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
+public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter implements DataApi.DataListener{
     public final String LOG_TAG = SunshineSyncAdapter.class.getSimpleName();
     public static final String ACTION_DATA_UPDATED =
             "com.example.android.sunshine.app.ACTION_DATA_UPDATED";
@@ -95,8 +100,33 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
     public static final int LOCATION_STATUS_UNKNOWN = 3;
     public static final int LOCATION_STATUS_INVALID = 4;
 
+    GoogleApiClient mGoogleApiClient;
+
     public SunshineSyncAdapter(Context context, boolean autoInitialize) {
         super(context, autoInitialize);
+        mGoogleApiClient = new GoogleApiClient.Builder(context)
+                .addConnectionCallbacks(new GoogleApiClient.ConnectionCallbacks() {
+                    @Override
+                    public void onConnected(Bundle connectionHint) {
+                        Log.e(LOG_TAG, "onConnected: " + connectionHint);
+                        Wearable.DataApi.addListener(mGoogleApiClient, SunshineSyncAdapter.this);
+                    }
+
+                    @Override
+                    public void onConnectionSuspended(int cause) {
+                        Wearable.DataApi.removeListener(mGoogleApiClient, SunshineSyncAdapter.this);
+                        Log.d(LOG_TAG, "onConnectionSuspended: " + cause);
+                    }
+                })
+                .addOnConnectionFailedListener(new GoogleApiClient.OnConnectionFailedListener() {
+                    @Override
+                    public void onConnectionFailed(ConnectionResult result) {
+                        Log.d(LOG_TAG, "onConnectionFailed: " + result);
+                    }
+                })
+                // Request access only to the Wearable API
+                .addApi(Wearable.API)
+                .build();
     }
 
     @Override
@@ -547,12 +577,14 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                 weatherAsset = Utility.createAssetFromBitmap(largeIcon);
             }
         }
+        int a = new Random().nextInt();
+        Log.e(LOG_TAG, "random: " + a);
         PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_WEARABLE_PATH);
-        putDataMapReq.getDataMap().putString(HIGH_TEMP_KEY, "777");
+        putDataMapReq.getDataMap().putString(HIGH_TEMP_KEY, high);
         putDataMapReq.getDataMap().putString(LOW_TEMP_KEY, low);
         putDataMapReq.getDataMap().putAsset(WEATHER_IMAGE_KEY, weatherAsset);
         PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
-        Wearable.DataApi.putDataItem(SunshineSyncService.getmGoogleApiClient(), putDataReq);
+        Wearable.DataApi.putDataItem(mGoogleApiClient, putDataReq);
     }
     /**
      * Helper method to handle insertion of a new location in the weather database.
@@ -706,5 +738,9 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
         SharedPreferences.Editor spe = sp.edit();
         spe.putInt(c.getString(R.string.pref_location_status_key), locationStatus);
         spe.commit();
+    }
+
+    @Override public void onDataChanged(DataEventBuffer dataEventBuffer) {
+
     }
 }
