@@ -39,8 +39,11 @@ import android.view.WindowInsets;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
+import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
+import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
 import java.text.SimpleDateFormat;
@@ -53,6 +56,12 @@ import java.util.concurrent.TimeUnit;
 public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
 
     private static final String TAG = "SunshineWatch";
+
+    public static final String WEATHER_WEARABLE_PATH = "/weather_wearable_path";
+    public static final String HIGH_TEMP_KEY = "high_temp_key";
+    public static final String LOW_TEMP_KEY = "low_temp_key";
+    public static final String WEATHER_IMAGE_KEY = "weather_image_key";
+
 
     private static final long NORMAL_UPDATE_RATE_MS = 500;
     private static final long MUTE_UPDATE_RATE_MS = TimeUnit.MINUTES.toMillis(1);
@@ -109,6 +118,10 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
         float mLineHeight;
         String mAmString;
         String mPmString;
+
+        String highTemp;
+        String lowTemp;
+        Asset weatherImage;
 
         boolean mRegisteredReceiver = false;
 
@@ -264,7 +277,12 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
                 canvas.drawText(
                         mDateFormat.format(mDate),
                         mXOffset, mYOffset + mLineHeight * 2, mDatePaint);
-                canvas.drawText("HI", mXOffset, mYOffset + mLineHeight * 3, mDatePaint);
+                if(highTemp != null && lowTemp != null) {
+                    // High/Low temp
+                    float highTempTextLength = mDatePaint.measureText(highTemp);
+                    canvas.drawText(highTemp, mXOffset, mYOffset + mLineHeight * 3, mDatePaint);
+                    canvas.drawText(lowTemp, mXOffset + highTempTextLength, mYOffset + mLineHeight * 3, mDatePaint);
+                }
             }
         }
 
@@ -362,6 +380,22 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
 
         @Override public void onDataChanged(DataEventBuffer dataEventBuffer) {
             Log.e(TAG, "onDataChanged");
+            for(DataEvent event : dataEventBuffer){
+                if(event.getType() == DataEvent.TYPE_CHANGED){
+                    String path = event.getDataItem().getUri().getPath();
+                    if(WEATHER_WEARABLE_PATH.equals(path)){
+                        DataMapItem dataMapItem = DataMapItem.fromDataItem(event.getDataItem());
+                        highTemp = dataMapItem.getDataMap().getString(HIGH_TEMP_KEY);
+                        lowTemp = dataMapItem.getDataMap().getString(LOW_TEMP_KEY);
+                        weatherImage = dataMapItem.getDataMap().getAsset(WEATHER_IMAGE_KEY);
+
+                        invalidate();
+                    }
+                    else{
+                        Log.e(TAG, "Unknown data path: " + path);
+                    }
+                }
+            }
         }
 
         @Override public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {

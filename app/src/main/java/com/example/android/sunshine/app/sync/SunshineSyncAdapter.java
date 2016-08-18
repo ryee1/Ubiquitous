@@ -36,6 +36,7 @@ import com.example.android.sunshine.app.R;
 import com.example.android.sunshine.app.Utility;
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.muzei.WeatherMuzeiSource;
+import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.PutDataMapRequest;
 import com.google.android.gms.wearable.PutDataRequest;
 import com.google.android.gms.wearable.Wearable;
@@ -66,6 +67,10 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
     private static final long DAY_IN_MILLIS = 1000 * 60 * 60 * 24;
     private static final int WEATHER_NOTIFICATION_ID = 3004;
 
+    public static final String WEATHER_WEARABLE_PATH = "/weather_wearable_path";
+    public static final String HIGH_TEMP_KEY = "high_temp_key";
+    public static final String LOW_TEMP_KEY = "low_temp_key";
+    public static final String WEATHER_IMAGE_KEY = "weather_image_key";
 
     private static final String[] NOTIFY_WEATHER_PROJECTION = new String[] {
             WeatherContract.WeatherEntry.COLUMN_WEATHER_ID,
@@ -511,22 +516,29 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
     private void syncWearable(){
         Context context = getContext();
+        String high = "", low = "";
+        Asset weatherAsset = null;
         String locationQuery = Utility.getPreferredLocation(context);
 
         Uri weatherUri = WeatherContract.WeatherEntry.buildWeatherLocationWithDate(locationQuery, System.currentTimeMillis());
-
-        // we'll query our contentProvider, as always
         Cursor cursor = context.getContentResolver().query(weatherUri, NOTIFY_WEATHER_PROJECTION, null, null, null);
 
+        if (cursor.moveToFirst()) {
+            int weatherId = cursor.getInt(INDEX_WEATHER_ID);
+            high = String.valueOf(cursor.getDouble(INDEX_MAX_TEMP));
+            low = String.valueOf(cursor.getDouble(INDEX_MIN_TEMP));
 
-        long random =System.currentTimeMillis();
-        PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/count");
-        putDataMapReq.getDataMap().putLong("HH", random);
+            int iconId = Utility.getIconResourceForWeatherCondition(weatherId);
+            Resources resources = context.getResources();
+            int artResourceId = Utility.getArtResourceForWeatherCondition(weatherId);
+            String artUrl = Utility.getArtUrlForWeatherCondition(context, weatherId);
+        }
+        PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_WEARABLE_PATH);
+        putDataMapReq.getDataMap().putString(HIGH_TEMP_KEY, high);
+        putDataMapReq.getDataMap().putString(LOW_TEMP_KEY, low);
+        putDataMapReq.getDataMap().putAsset(WEATHER_IMAGE_KEY, weatherAsset);
         PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
         Wearable.DataApi.putDataItem(SunshineSyncService.getmGoogleApiClient(), putDataReq);
-
-
-        Log.e(LOG_TAG, "syncWearable: " + random);
     }
     /**
      * Helper method to handle insertion of a new location in the weather database.
