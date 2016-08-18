@@ -21,6 +21,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -46,6 +48,7 @@ import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
+import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -121,7 +124,7 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
 
         String highTemp;
         String lowTemp;
-        Asset weatherImage;
+        Bitmap weatherIcon;
 
         boolean mRegisteredReceiver = false;
 
@@ -277,11 +280,14 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
                 canvas.drawText(
                         mDateFormat.format(mDate),
                         mXOffset, mYOffset + mLineHeight * 2, mDatePaint);
-                if(highTemp != null && lowTemp != null) {
+                if(highTemp != null && lowTemp != null && weatherIcon != null) {
                     // High/Low temp
                     float highTempTextLength = mDatePaint.measureText(highTemp);
+                    float lowTempTextLength = mDatePaint.measureText(lowTemp);
                     canvas.drawText(highTemp, mXOffset, mYOffset + mLineHeight * 3, mDatePaint);
                     canvas.drawText(lowTemp, mXOffset + highTempTextLength, mYOffset + mLineHeight * 3, mDatePaint);
+                    canvas.drawBitmap(weatherIcon, mXOffset + highTempTextLength + lowTempTextLength + mXOffset,
+                            mYOffset + mLineHeight * 3, null);
                 }
             }
         }
@@ -366,6 +372,27 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
 
             mColonWidth = mColonPaint.measureText(COLON_STRING);
         }
+        public Bitmap loadBitmapFromAsset(Asset asset) {
+            if (asset == null) {
+                throw new IllegalArgumentException("Asset must be non-null");
+            }
+            ConnectionResult result =
+                    mGoogleApiClient.blockingConnect(30, TimeUnit.MILLISECONDS);
+            if (!result.isSuccess()) {
+                return null;
+            }
+            // convert asset into a file descriptor and block until it's ready
+            InputStream assetInputStream = Wearable.DataApi.getFdForAsset(
+                    mGoogleApiClient, asset).await().getInputStream();
+            mGoogleApiClient.disconnect();
+
+            if (assetInputStream == null) {
+                Log.w(TAG, "Requested an unknown Asset.");
+                return null;
+            }
+            // decode the stream into a bitmap
+            return BitmapFactory.decodeStream(assetInputStream);
+        }
 
         @Override public void onConnected(@Nullable Bundle bundle) {
             Wearable.DataApi.addListener(mGoogleApiClient, this);
@@ -387,7 +414,7 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
                         DataMapItem dataMapItem = DataMapItem.fromDataItem(event.getDataItem());
                         highTemp = dataMapItem.getDataMap().getString(HIGH_TEMP_KEY);
                         lowTemp = dataMapItem.getDataMap().getString(LOW_TEMP_KEY);
-                        weatherImage = dataMapItem.getDataMap().getAsset(WEATHER_IMAGE_KEY);
+                        weatherIcon = loadBitmapFromAsset(dataMapItem.getDataMap().getAsset(WEATHER_IMAGE_KEY));
 
                         invalidate();
                     }

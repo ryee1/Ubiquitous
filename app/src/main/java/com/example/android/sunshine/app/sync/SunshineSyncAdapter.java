@@ -527,14 +527,28 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
             int weatherId = cursor.getInt(INDEX_WEATHER_ID);
             high = String.valueOf(cursor.getDouble(INDEX_MAX_TEMP));
             low = String.valueOf(cursor.getDouble(INDEX_MIN_TEMP));
-
             int iconId = Utility.getIconResourceForWeatherCondition(weatherId);
             Resources resources = context.getResources();
             int artResourceId = Utility.getArtResourceForWeatherCondition(weatherId);
             String artUrl = Utility.getArtUrlForWeatherCondition(context, weatherId);
+
+            try {
+                Bitmap largeIcon = Glide.with(context)
+                        .load(artUrl)
+                        .asBitmap()
+                        .error(artResourceId)
+                        .fitCenter()
+                        .into(30, 30).get();
+
+                weatherAsset = Utility.createAssetFromBitmap(largeIcon);
+            } catch (InterruptedException | ExecutionException e) {
+                Log.e(LOG_TAG, "Error retrieving large icon from " + artUrl, e);
+                Bitmap largeIcon = BitmapFactory.decodeResource(resources, artResourceId);
+                weatherAsset = Utility.createAssetFromBitmap(largeIcon);
+            }
         }
         PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_WEARABLE_PATH);
-        putDataMapReq.getDataMap().putString(HIGH_TEMP_KEY, high);
+        putDataMapReq.getDataMap().putString(HIGH_TEMP_KEY, "hello");
         putDataMapReq.getDataMap().putString(LOW_TEMP_KEY, low);
         putDataMapReq.getDataMap().putAsset(WEATHER_IMAGE_KEY, weatherAsset);
         PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
