@@ -548,7 +548,7 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
             }
         }
         PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_WEARABLE_PATH);
-        putDataMapReq.getDataMap().putString(HIGH_TEMP_KEY, "hello");
+        putDataMapReq.getDataMap().putString(HIGH_TEMP_KEY, "777");
         putDataMapReq.getDataMap().putString(LOW_TEMP_KEY, low);
         putDataMapReq.getDataMap().putAsset(WEATHER_IMAGE_KEY, weatherAsset);
         PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
