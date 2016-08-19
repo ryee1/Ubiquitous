@@ -79,14 +79,10 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
             Typeface.create(Typeface.SANS_SERIF, Typeface.BOLD);
     private static final Typeface NORMAL_TYPEFACE =
             Typeface.create(Typeface.SANS_SERIF, Typeface.NORMAL);
-    int mInteractiveBackgroundColor =
-            DigitalWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_BACKGROUND;
-    int mInteractiveHourDigitsColor =
-            DigitalWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_HOUR_DIGITS;
-    int mInteractiveMinuteDigitsColor =
-            DigitalWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_MINUTE_DIGITS;
-    int mInteractiveSecondDigitsColor =
-            DigitalWatchFaceUtil.COLOR_VALUE_DEFAULT_AND_AMBIENT_SECOND_DIGITS;
+    int mInteractiveBackgroundColor;
+    int mInteractiveHourDigitsColor;
+    int mInteractiveMinuteDigitsColor;
+    int mInteractiveSecondDigitsColor;
 
     @Override public CustomEngine onCreateEngine() {
         return new CustomEngine();
@@ -172,18 +168,22 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
 
 
             Resources resources = SunshineDigitalWatchFace.this.getResources();
+            mInteractiveBackgroundColor = resources.getColor(R.color.background);
+            mInteractiveHourDigitsColor = resources.getColor(R.color.white);
+            mInteractiveMinuteDigitsColor = resources.getColor(R.color.white);
+            mInteractiveSecondDigitsColor = resources.getColor(R.color.white);
             mYOffset = resources.getDimension(R.dimen.digital_y_offset);
             mLineHeight = resources.getDimension(R.dimen.digital_line_height);
             mAmString = resources.getString(R.string.digital_am);
             mPmString = resources.getString(R.string.digital_pm);
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(mInteractiveBackgroundColor);
-            mDatePaint = createTextPaint(resources.getColor(R.color.digital_date));
+            mDatePaint = createTextPaint(resources.getColor(R.color.white));
             mHourPaint = createTextPaint(mInteractiveHourDigitsColor, BOLD_TYPEFACE);
             mMinutePaint = createTextPaint(mInteractiveMinuteDigitsColor);
             mSecondPaint = createTextPaint(mInteractiveSecondDigitsColor);
-            mAmPmPaint = createTextPaint(resources.getColor(R.color.digital_am_pm));
-            mColonPaint = createTextPaint(resources.getColor(R.color.digital_colons));
+            mAmPmPaint = createTextPaint(resources.getColor(R.color.white));
+            mColonPaint = createTextPaint(resources.getColor(R.color.white));
 
             mCalendar = Calendar.getInstance();
             mDate = new Date();
