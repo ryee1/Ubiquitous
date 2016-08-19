@@ -55,7 +55,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.Random;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
 
@@ -553,8 +552,8 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
 
         if (cursor.moveToFirst()) {
             int weatherId = cursor.getInt(INDEX_WEATHER_ID);
-            high = String.valueOf(cursor.getDouble(INDEX_MAX_TEMP));
-            low = String.valueOf(cursor.getDouble(INDEX_MIN_TEMP));
+            high = Utility.formatTemperature(context, cursor.getDouble(INDEX_MAX_TEMP));
+            low = Utility.formatTemperature(context, cursor.getDouble(INDEX_MIN_TEMP));
             Resources resources = context.getResources();
             int artResourceId = Utility.getArtResourceForWeatherCondition(weatherId);
             String artUrl = Utility.getArtUrlForWeatherCondition(context, weatherId);
@@ -574,14 +573,11 @@ public class SunshineSyncAdapter extends AbstractThreadedSyncAdapter {
                 weatherAsset = Utility.createAssetFromBitmap(largeIcon);
             }
         }
-        Log.e(LOG_TAG, "high: " + high + " low: " + low);
-        int a = new Random().nextInt(5);
-        PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_WEARABLE_PATH);
-        putDataMapReq.getDataMap().putString(HIGH_TEMP_KEY, String.valueOf(a));
+        PutDataMapRequest putDataMapReq = PutDataMapRequest.create(WEATHER_WEARABLE_PATH).setUrgent();
         putDataMapReq.getDataMap().putString(LOW_TEMP_KEY, low);
+        putDataMapReq.getDataMap().putString(HIGH_TEMP_KEY, high + " ");
         putDataMapReq.getDataMap().putAsset(WEATHER_IMAGE_KEY, weatherAsset);
         PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
-        putDataMapReq.setUrgent();
         Wearable.DataApi.putDataItem(mGoogleApiClient, putDataReq);
     }
 

@@ -225,7 +225,6 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
             float lowTempTextLength = 0, highTempTextLength = 0;
             mCalendar.setTimeInMillis(now);
             mDate.setTime(now);
-            boolean is24Hour = DateFormat.is24HourFormat(SunshineDigitalWatchFace.this);
 
             // Show colons for the first half of each second so the colons blink on when the time
             // updates.
@@ -237,15 +236,13 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
             // Draw the hours.
             float x = mXOffset;
             String hourString;
-            if (is24Hour) {
-                hourString = formatTwoDigitNumber(mCalendar.get(Calendar.HOUR_OF_DAY));
-            } else {
-                int hour = mCalendar.get(Calendar.HOUR);
-                if (hour == 0) {
-                    hour = 12;
-                }
-                hourString = String.valueOf(hour);
+
+            int hour = mCalendar.get(Calendar.HOUR);
+            if (hour == 0) {
+                hour = 12;
             }
+            hourString = String.valueOf(hour);
+
             canvas.drawText(hourString, x, mYOffset, mHourPaint);
             x += mHourPaint.measureText(hourString);
 
@@ -270,7 +267,7 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
                 x += mColonWidth;
                 canvas.drawText(formatTwoDigitNumber(
                         mCalendar.get(Calendar.SECOND)), x, mYOffset, mSecondPaint);
-            } else if (!is24Hour) {
+            } else {
                 x += mColonWidth;
                 canvas.drawText(getAmPmString(
                         mCalendar.get(Calendar.AM_PM)), x, mYOffset, mAmPmPaint);
@@ -289,14 +286,12 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
                         mXOffset, mYOffset + mLineHeight * 2, mDatePaint);
                 if (highTemp != null && lowTemp != null) {
                     // High/Low temp
-                    highTempTextLength = mDatePaint.measureText(highTemp);
-                    lowTempTextLength = mDatePaint.measureText(lowTemp);
-                    canvas.drawText(highTemp, mXOffset, mYOffset + mLineHeight * 3, mDatePaint);
-                    canvas.drawText(lowTemp, mXOffset + highTempTextLength, mYOffset + mLineHeight * 3, mDatePaint);
+                    highTempTextLength = mDatePaint.measureText(highTemp + lowTemp) / 2f;
+                    canvas.drawText(highTemp + " " + lowTemp, bounds.centerX() - highTempTextLength, mYOffset + mLineHeight * 4, mDatePaint);
                 }
-                if(weatherIcon != null){
-                    canvas.drawBitmap(weatherIcon, mXOffset + highTempTextLength + lowTempTextLength + mXOffset,
-                            mYOffset + mLineHeight * 3, null);
+                if (weatherIcon != null) {
+                    canvas.drawBitmap(weatherIcon, bounds.centerX() - weatherIcon.getWidth() / 2f,
+                            mYOffset + mLineHeight * 5, null);
                 }
             }
         }
@@ -383,7 +378,7 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
             mColonWidth = mColonPaint.measureText(COLON_STRING);
         }
 
-        private void sendRequestSyncMessage(){
+        private void sendRequestSyncMessage() {
             new Thread(new Runnable() {
                 @Override
                 public void run() {
@@ -434,8 +429,7 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
                     } else {
                         Log.e(TAG, "Unknown data path: " + path);
                     }
-                }
-                else{
+                } else {
                     Log.e(TAG, "Unknown Data Type: " + event.getType());
                 }
             }
