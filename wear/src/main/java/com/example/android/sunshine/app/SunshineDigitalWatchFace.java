@@ -42,14 +42,15 @@ import android.view.WindowInsets;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.common.api.PendingResult;
+import com.google.android.gms.common.api.ResultCallback;
 import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
 import com.google.android.gms.wearable.DataMapItem;
-import com.google.android.gms.wearable.PutDataMapRequest;
-import com.google.android.gms.wearable.PutDataRequest;
+import com.google.android.gms.wearable.MessageApi;
+import com.google.android.gms.wearable.Node;
+import com.google.android.gms.wearable.NodeApi;
 import com.google.android.gms.wearable.Wearable;
 
 import java.io.InputStream;
@@ -64,13 +65,12 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
 
     private static final String TAG = "SunshineWatch";
 
-    public static final String REQUEST_SYNC_PATH = "/request_sync";
-
     public static final String WEATHER_WEARABLE_PATH = "/weather_wearable_path";
     public static final String HIGH_TEMP_KEY = "high_temp_key";
     public static final String LOW_TEMP_KEY = "low_temp_key";
     public static final String WEATHER_IMAGE_KEY = "weather_image_key";
 
+    public static final String REQUEST_SYNC_PATH = "/request_sync_path";
 
     private static final long NORMAL_UPDATE_RATE_MS = 500;
     private static final long MUTE_UPDATE_RATE_MS = TimeUnit.MINUTES.toMillis(1);
@@ -187,8 +187,8 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
 
             mCalendar = Calendar.getInstance();
             mDate = new Date();
-
             initFormats();
+
         }
 
         private Paint createTextPaint(int defaultInteractiveColor) {
@@ -383,14 +383,33 @@ public class SunshineDigitalWatchFace extends CanvasWatchFaceService {
             mColonWidth = mColonPaint.measureText(COLON_STRING);
         }
 
+        private void sendRequestSyncMessage(){
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    NodeApi.GetConnectedNodesResult nodes = Wearable.NodeApi.getConnectedNodes(mGoogleApiClient).await();
+                    for (Node node : nodes.getNodes()) {
+                        Log.e(TAG, "sendRequestSyncMessage");
+                        Wearable.MessageApi.sendMessage(
+                                mGoogleApiClient, node.getId(), REQUEST_SYNC_PATH, null).setResultCallback(
+                                new ResultCallback<MessageApi.SendMessageResult>() {
+                                    @Override
+                                    public void onResult(MessageApi.SendMessageResult sendMessageResult) {
+                                        if (!sendMessageResult.getStatus().isSuccess()) {
+                                            Log.e(TAG, "message send failed");
+                                        }
+                                    }
+                                }
+                        );
+                    }
+                }
+
+            }).start();
+        }
 
         @Override public void onConnected(@Nullable Bundle bundle) {
             Wearable.DataApi.addListener(mGoogleApiClient, this);
-            PutDataMapRequest putDataMapReq = PutDataMapRequest.create("/request_sync");
-            putDataMapReq.getDataMap().putInt(COUNT_KEY, count++);
-            PutDataRequest putDataReq = putDataMapReq.asPutDataRequest();
-            PendingResult<DataApi.DataItemResult> pendingResult =
-                    Wearable.DataApi.putDataItem(mGoogleApiClient, putDataReq);
+            sendRequestSyncMessage();
             Log.e(TAG, "onConnected");
         }
 
